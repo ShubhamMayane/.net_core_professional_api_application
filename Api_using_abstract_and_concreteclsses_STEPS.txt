@@ -1,3 +1,5 @@
+Project description:
+
 act as a professional  .net core web api developer and create one crud application using ms sql server 
 use
 controllers
@@ -47,7 +49,9 @@ Steps to create  our app.
 
     SQL Server (LocalDB is sufficient for development)
 
-    Postman for API testing
+    sql server management studio
+    
+    Postman for API testing(optional because we have a swagger)
 
 
 2.Creating the ASP.NET Core Web API Project for that do following things:   
@@ -283,6 +287,8 @@ now database connection is done.
 
                 //followign are hte actual api defintions:
 
+                //api to get all rows data from Products table
+
                     public async Task<IEnumerable<Product>> GetAllAsync() =>
                     
                     await _context.Products.ToListAsync();
@@ -308,6 +314,8 @@ now database connection is done.
                         var product = await _context.Products.FindAsync(id);
                         if (product == null) return null;
 
+                           //logic to update a column of specific row
+
                         product.Name = updatedProduct.Name;
                         product.Price = updatedProduct.Price;
                         product.Stock = updatedProduct.Stock;
@@ -315,6 +323,9 @@ now database connection is done.
                         await _context.SaveChangesAsync();
                         return product;
                     }
+
+
+                    
 
 
 
@@ -340,7 +351,7 @@ now click on add.
     a.write below import statements
 
         using Microsoft.AspNetCore.Mvc;
-        using ProductApplication.Models;
+        using ProductApplication.Models.Entities;
         using ProductApplication.Repositories;
 
     b.open this ProductController.cs file and do followign things inside this file.
@@ -435,5 +446,124 @@ MY STUDY:
 API CALLING SEQUENCE IN C# .NET :
 
 
-url jevha hit hote techa --->contoller.cs madhil specific function call kele jate-->controller.cs madhil te specific function tyachya body madhe 
+url jevha hit hote tevha --->contoller.cs madhil specific function call kele jate-->controller.cs madhil te specific function tyachya body madhe 
 ProductRepository.cs madhil actual api function la call karte asa ha ekdam soppa api calling cha sequence aahe .net madhe.
+
+
+flow:
+
+controller.cs->repository.cs asa ha api cha call sequnece  aahe.
+
+
+
+Now lets see how to implement a new api in existing project.:
+
+
+Patch api implementation:
+
+one type of api is remaining and that type is patch type for that do followign things
+
+1.right click on Models>add>class> give class name as ProductRequestBody.cs >click on add button.
+
+2.open this ProductRequestBody.cs file and ya madhil class body madhe pudhil code lihi.
+
+        public string? Name { get; set; }
+        public decimal? Price { get; set; }
+        public int? Stock { get; set; }
+
+    /***********************
+
+        in above all statements ? symbol is most important.yacha artha asa hoto ki 
+        jevha ya varil class cha object create kela jato tevha tya object madhe
+        jyanna jyanna ? symbol applied aahet ti key value pair define karne manadatory nahit
+    
+    /***********************
+2.Now open IRepository.cs file and write below function delcaration statement
+inside the class body.
+
+      Task<T?> UpdateSpecificColumnsAsync(int id, PatchRequestBody entity);
+
+
+3.Now open ProductRepository.cs file and inside the class write following function definition
+
+    public async Task<Product?> UpdateSpecificColumnsAsync(int id, ProductPatchDto patchDto)
+{
+    var product = await _context.Products.FindAsync(id);
+    if (product == null) return null;
+
+    // Only update the fields that are not null in the patch DTO
+    if (patchDto.Name != null)
+        product.Name = patchDto.Name;
+
+    if (patchDto.Price.HasValue)
+        product.Price = patchDto.Price.Value;
+
+    if (patchDto.Stock.HasValue)
+        product.Stock = patchDto.Stock.Value;
+
+    await _context.SaveChangesAsync();
+    return product;
+}
+
+
+4.Now open ProductController.cs and tya madhil class body
+ madhe pudhil function definition lihi.
+
+    [HttpPatch("{id}")]
+public async Task<IActionResult> PatchProduct(int id, [FromBody] ProductPatchDto patchDto)
+{
+    var updatedProduct = await _productService.PatchAsync(id, patchDto);
+    if (updatedProduct == null)
+        return NotFound();
+
+    return Ok(updatedProduct);
+}
+
+
+this is how we can add a new api in existing project. 
+
+
+*-----------------------------------------------------------------------------------------
+How to send the ""customized resposnse"" or "user defined" to the client.
+
+
+   //6
+   [HttpPatch("{id}")]
+   public async Task<IActionResult> PatchMenuItem(int id, [FromBody] PatchRequestBody patchDto)
+   {
+       var updatedItem = await _repository.UpdateSpecificColumnsAsync(id, patchDto);
+       if (updatedItem == null)
+       {
+
+       
+           return NotFound(new{
+                    status="not found with given id"
+                    });
+       }
+       return Ok(new{
+            status="updaded"
+            data:variablename
+
+
+       });
+   }
+
+let see above api varil api chya /function chya body madhe 
+
+        1//
+            return NotFound(new{
+                status="not found with given id"
+            });
+   
+
+
+        2//     
+            return Ok(new
+            {
+                status = "updated",
+                updatedRow = updatedProduct
+            });
+
+
+    asha prakare aapan customize response patavun shakato  clinet la.
+    lai soppa aahe re.
